@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import sys
+import os
 from getpass import getpass
 from irods.session import iRODSSession
 from irods.access import iRODSAccess
@@ -13,7 +14,51 @@ class BisQueIrodsIntegration:
         self.password = password
         self.zone = zone
 
-    def create_user(self, new_user='', password='', groups=[]):
+
+    def set_host(self, host='localhost', port=1247, admin_user='', password='', zone=''):
+        self.host = host
+        self.port = port
+        self.admin_user = admin_user
+        self.password = password
+        self.zone = zone
+
+
+    def load_from_env(self):
+        host = os.environ.get('BISQUE_IRODS_HOST', '')
+        port = 1247
+        _port = os.environ.get("BISQUE_IRODS_PORT", '')
+        if len(_port) > 0:
+            if int(_port) > 0:
+                port = int(_port)
+
+        zone = os.environ.get('BISQUE_IRODS_ZONE', '')
+        admin_user = os.environ.get('BISQUE_IRODS_ADMIN_USERNAME', '')
+        password = os.environ.get('BISQUE_IRODS_ADMIN_PASSWORD', '')
+
+        # verify
+        if len(host) == 0:
+            raise ValueError("Environment varaible 'BISQUE_IRODS_HOST' is not set")
+
+        if port <= 0:
+            raise ValueError("Environment varaible 'BISQUE_IRODS_PORT' is not set")
+
+        if len(zone) == 0:
+            raise ValueError("Environment varaible 'BISQUE_IRODS_ZONE' is not set")
+        
+        if len(admin_user) == 0:
+            raise ValueError("Environment varaible 'BISQUE_IRODS_ADMIN_USERNAME' is not set")
+
+        if len(password) == 0:
+            raise ValueError("Environment varaible 'BISQUE_IRODS_ADMIN_PASSWORD' is not set")
+        
+        self.host = host
+        self.port = port
+        self.zone = zone
+        self.admin_user = admin_user
+        self.password = password
+
+
+    def create_user(self, new_user='', password=''):
         # Create the user
         # should be done by admin
         with iRODSSession(host=self.host, port=self.port, user=self.admin_user, password=self.password, zone=self.zone) as session:
@@ -26,14 +71,12 @@ class BisQueIrodsIntegration:
             session.users.modify(new_user, 'password', password, self.zone)
 
             # add to groups
-            for group in groups:
-                # we don't need to add the user to 'public' group as it's default
-                if group != 'public':
-                    session.user_groups.addmember(group, new_user, self.zone)
+            session.user_groups.addmember('bisque_group', new_user, self.zone)
         
         # Set ACL
         # should be done by the new user 
         self.update_acl_userhome(new_user, password)
+
 
     def update_acl_userhome(self, new_user='', password=''):
         # Set ACL
@@ -49,29 +92,43 @@ class BisQueIrodsIntegration:
             session.permissions.set(acl_admin)
 
 
-def check_args(argv):
-    admin_user = ""
-    port = 1247
-    zone = ""
+def get_cmd_args(argv):
+    host = os.environ.get('BISQUE_IRODS_HOST', '')
+    port = 0
+    _port = os.environ.get("BISQUE_IRODS_PORT", '')
+    if len(_port) > 0:
+        if int(_port) > 0:
+            port = int(_port)
+
+    zone = os.environ.get('BISQUE_IRODS_ZONE', '')
+    admin_user = os.environ.get('BISQUE_IRODS_ADMIN_USERNAME', '')
+    password = os.environ.get('BISQUE_IRODS_ADMIN_PASSWORD', '')
+
+
     if len(argv) == 3:
         host = argv[0]
         port = argv[1]
         zone = argv[2]
     elif len(argv) == 0:
-        host = input("iRODS host: ")
         if len(host) == 0:
-            print("iRODS host is not given", file=sys.stderr)
-            sys.exit(1)
+            host = input("iRODS host: ")
+            if len(host) == 0:
+                print("iRODS host is not given", file=sys.stderr)
+                sys.exit(1)
 
-        _port = input("iRODS port [1247]: ")
-        if len(_port) > 0:
-            if int(_port) > 0:
-                port = int(_port)
+        if port <= 0:
+            _port = input("iRODS port [1247]: ")
+            if len(_port) > 0:
+                if int(_port) > 0:
+                    port = int(_port)
+            else:
+                port = 1247
 
-        zone = input("iRODS zone: ")
         if len(zone) == 0:
-            print("iRODS zone is not given", file=sys.stderr)
-            sys.exit(1)
+            zone = input("iRODS zone: ")
+            if len(zone) == 0:
+                print("iRODS zone is not given", file=sys.stderr)
+                sys.exit(1)
     else:
         print("Not sufficient arguments", file=sys.stderr)
         print("> python user.py <host> <port> <zone>", file=sys.stderr)
@@ -89,15 +146,17 @@ def check_args(argv):
         print("iRODS zone is not given", file=sys.stderr)
         sys.exit(1)
     
-    admin_user = input("Admin username: ")
     if len(admin_user) == 0:
-        print("Admin username is not given", file=sys.stderr)
-        sys.exit(1)
+        admin_user = input("Admin username: ")
+        if len(admin_user) == 0:
+            print("Admin username is not given", file=sys.stderr)
+            sys.exit(1)
 
-    password = getpass(prompt="Admin password: ")
     if len(password) == 0:
-        print("Admin password is not given", file=sys.stderr)
-        sys.exit(1)
+        password = getpass(prompt="Admin password: ")
+        if len(password) == 0:
+            print("Admin password is not given", file=sys.stderr)
+            sys.exit(1)
     
     new_user = input("New username: ")
     if len(new_user) == 0:
@@ -119,14 +178,14 @@ def check_args(argv):
 
         "new_user": new_user,
         "new_password": new_password,
-        "groups": ['bisque_group'],
     }
 
 def main(argv):
-    arg = check_args(argv)
+    arg = get_cmd_args(argv)
 
     integ = BisQueIrodsIntegration(host=arg["host"], port=arg["port"], admin_user=arg["admin_user"], password=arg["password"], zone=arg["zone"])
-    integ.create_user(arg["new_user"], arg["new_password"], arg["groups"])
+    integ.create_user(arg["new_user"], arg["new_password"])
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+    
