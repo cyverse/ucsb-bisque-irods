@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-app
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ["/bin/sh"]
+    env:
+      - name: BISQUE_IRODS_HOST
+        valueFrom:
+          secretKeyRef:
+            name: irods-csi-driver-global-secret
+            key: host
+      - name: BISQUE_IRODS_PORT
+        valueFrom:
+          secretKeyRef:
+            name: irods-csi-driver-global-secret
+            key: port
+      - name: BISQUE_IRODS_ZONE
+        valueFrom:
+          secretKeyRef:
+            name: irods-csi-driver-global-secret
+            key: zone
+      - name: BISQUE_IRODS_ADMIN_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: irods-csi-driver-global-secret
+            key: user
+      - name: BISQUE_IRODS_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: irods-csi-driver-global-secret
+            key: password
+    volumeMounts:
+      - name: irods-test-pv
+        mountPath: /cluster/irods
+  restartPolicy: Never
+  volumes:
+    - name: irods-test-pv
+      persistentVolumeClaim:
+        claimName: irods-test-pvc
