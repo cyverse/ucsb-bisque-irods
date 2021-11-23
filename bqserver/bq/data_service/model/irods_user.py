@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 
 import sys
 import os
@@ -113,7 +113,7 @@ def get_cmd_args(argv):
         if len(host) == 0:
             host = input("iRODS host: ")
             if len(host) == 0:
-                print("iRODS host is not given", file=sys.stderr)
+                sys.stderr.write("iRODS host is not given\n")
                 sys.exit(1)
 
         if port <= 0:
@@ -127,45 +127,45 @@ def get_cmd_args(argv):
         if len(zone) == 0:
             zone = input("iRODS zone: ")
             if len(zone) == 0:
-                print("iRODS zone is not given", file=sys.stderr)
+                sys.stderr.write("iRODS zone is not given\n")
                 sys.exit(1)
     else:
-        print("Not sufficient arguments", file=sys.stderr)
-        print("> python user.py <host> <port> <zone>", file=sys.stderr)
+        sys.stderr.write("Not sufficient arguments\n")
+        sys.stderr.write("> python irods_user.py <host> <port> <zone>\n")
         sys.exit(1)
 
     if len(host) == 0:
-        print("iRODS host is not given", file=sys.stderr)
+        sys.stderr.write("iRODS host is not given\n")
         sys.exit(1)
 
     if port <= 0:
-        print("iRODS port is not given", file=sys.stderr)
+        sys.stderr.write("iRODS port is not given\n")
         sys.exit(1)
 
     if len(zone) == 0:
-        print("iRODS zone is not given", file=sys.stderr)
+        sys.stderr.write("iRODS zone is not given\n")
         sys.exit(1)
     
     if len(admin_user) == 0:
         admin_user = input("Admin username: ")
         if len(admin_user) == 0:
-            print("Admin username is not given", file=sys.stderr)
+            sys.stderr.write("Admin username is not given\n")
             sys.exit(1)
 
     if len(password) == 0:
         password = getpass(prompt="Admin password: ")
         if len(password) == 0:
-            print("Admin password is not given", file=sys.stderr)
+            sys.stderr.write("Admin password is not given\n")
             sys.exit(1)
     
     new_user = input("New username: ")
     if len(new_user) == 0:
-        print("New username is not given", file=sys.stderr)
+        sys.stderr.write("New username is not given\n")
         sys.exit(1)
 
     new_password = getpass(prompt="New user password: ")
     if len(new_password) == 0:
-        print("New user password is not given", file=sys.stderr)
+        sys.stderr.write("New user password is not given\n")
         sys.exit(1)
 
 
