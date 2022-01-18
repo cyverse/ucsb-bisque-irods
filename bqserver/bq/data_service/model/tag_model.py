@@ -1008,11 +1008,12 @@ def bquser_callback (tg_user, operation, **kw):
                 irods_integ = BisQueIrodsIntegration()
                 irods_integ.load_from_env()
                 irods_integ.create_user(str(tg_user.user_name), str(tg_user.password))
+                log.info ('created an iRODS user %s for BQUSER %s' , (tg_user.user_name, u.name))
             except Exception as e:
                 log.exception ("An exception occured during iRODS account creation: %s" , str(e))
 
         return
-    if operation  == 'update':
+    if operation == 'update':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
         if u is not None:
             u.value = tg_user.email_address
@@ -1020,6 +1021,17 @@ def bquser_callback (tg_user, operation, **kw):
             dn.value = tg_user.display_name
             dn.permission = 'published'
             log.info ('updated BQUSER %s' , u.name)
+
+            # if password is updated
+            if tg_user.password:
+                # update iRODS Account
+                try:
+                    irods_integ = BisQueIrodsIntegration()
+                    irods_integ.load_from_env()
+                    irods_integ.update_user_password(str(tg_user.user_name), str(tg_user.password))
+                    log.info ('updated the password of the iRODS user %s for BQUSER %s' , (tg_user.user_name, u.name))
+                except Exception as e:
+                    log.exception ("An exception occured during iRODS account update: %s" , str(e))
         return
 
 User.callbacks.append (bquser_callback)

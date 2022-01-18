@@ -92,6 +92,14 @@ class BisQueIrodsIntegration:
             session.permissions.set(acl_admin)
 
 
+    def update_user_password(self, user='', password=''):
+        # Update the user's password
+        # should be done by admin
+        with iRODSSession(host=self.host, port=self.port, user=self.admin_user, password=self.password, zone=self.zone) as session:
+            # update password
+            session.users.modify(user, 'password', password, self.zone)
+
+
 def get_cmd_args(argv):
     host = os.environ.get('BISQUE_IRODS_HOST', '')
     port = 0
