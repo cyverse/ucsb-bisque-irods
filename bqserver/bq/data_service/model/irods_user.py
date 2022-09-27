@@ -80,27 +80,6 @@ class BisQueIrodsIntegration:
             # update password
             session.users.modify(new_user, 'password', password, self.zone)
 
-            # add to groups
-            session.user_groups.addmember('bisque_group', new_user, self.zone)
-        
-        # Set ACL
-        # should be done by the new user 
-        self.update_acl_userhome(new_user, password)
-
-
-    def update_acl_userhome(self, new_user='', password=''):
-        # Set ACL
-        with iRODSSession(host=self.host, port=self.port, user=new_user, password=password, zone=self.zone) as session:
-            userhome = "/%s/home/%s" % (self.zone, new_user)
-            
-            # enable ACL inheritance of the user's home directory
-            acl_inherit = iRODSAccess('inherit', userhome)
-            session.permissions.set(acl_inherit)
-
-            # allow rodsadmin group to access the home directory
-            acl_admin = iRODSAccess('write', userhome, 'rodsadmin', self.zone)
-            session.permissions.set(acl_admin)
-
 
     def update_user_password(self, user='', password=''):
         # Update the user's password
