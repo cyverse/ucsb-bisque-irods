@@ -8,6 +8,12 @@ spec:
     image: busybox
     command: ["/bin/sh"]
     env:
+      - name: BISQUE_BISQUE_BLOB_SERVICE_STORES
+        value: "local,irods"
+      - name: BISQUE_BISQUE_STORES_IRODS_MOUNTURL
+        value: "file:///irods_mount/$$user/"
+      - name: BISQUE_BISQUE_STORES_IRODS_TOP
+        value: "file:///irods_mount/"
       - name: BISQUE_IRODS_HOST
         valueFrom:
           secretKeyRef:
