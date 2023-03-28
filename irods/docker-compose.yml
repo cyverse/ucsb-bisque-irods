@@ -1,0 +1,133 @@
+---
+version: "2.0"
+
+services:
+  dbms:
+    build:
+      context: .
+      dockerfile: postgresql/Dockerfile
+      args:
+        IRODS_RESOURCES: "$IRODS_RES_CONF_NAME:$IRODS_CONF_HOST:$IRODS_VAULT"
+        IRODS_ZONE_NAME: "$IRODS_ZONE_NAME"
+        DB_NAME: "$DB_NAME"
+        DB_USER: "$DB_USER"
+        DB_PASSWORD: "$DB_PASSWORD"
+        DBMS_PORT: "$DBMS_PORT"
+        IRODS_ADMIN_USER: "$IRODS_ADMIN_USER"
+        IRODS_ADMIN_PASSWORD: "$IRODS_ADMIN_PASSWORD"
+        IRODS_BISQUE_ADMIN_USER: "$IRODS_BISQUE_ADMIN_USER"
+        IRODS_BISQUE_ADMIN_PASSWORD: "$IRODS_BISQUE_ADMIN_PASSWORD"
+    hostname: "$DBMS_CONF_HOST"
+    volumes:
+      - "db_volume:/var/lib/postgresql/12/main"
+      - "db_backup_volume:/var/opt/db_backup"
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: rabbitmq/Dockerfile
+      args:
+        RABBITMQ_PORT: "$RABBITMQ_PORT"
+        RABBITMQ_MANAGEMENT_PORT: "$RABBITMQ_MANAGEMENT_PORT"
+        RABBITMQ_ADMIN_USER: "$RABBITMQ_ADMIN_USER"
+        RABBITMQ_ADMIN_PASSWORD: "$RABBITMQ_ADMIN_PASSWORD"
+        RABBITMQ_IRODS_USER: "$RABBITMQ_IRODS_USER"
+        RABBITMQ_IRODS_PASSWORD: "$RABBITMQ_IRODS_PASSWORD"
+        RABBITMQ_IRODS_EXCHANGE: "$RABBITMQ_IRODS_EXCHANGE"
+    hostname: "$RABBITMQ_CONF_HOST"
+    ports:
+      - "$RABBITMQ_PORT:$RABBITMQ_PORT"
+      - "$RABBITMQ_MANAGEMENT_PORT:$RABBITMQ_MANAGEMENT_PORT"
+
+  irods:
+    build:
+      context: .
+      dockerfile: irods/Dockerfile
+      args:
+        DB_NAME: "$DB_NAME"
+        DB_USER: "$DB_USER"
+        DB_PASSWORD: "$DB_PASSWORD"
+        DBMS_HOST: "$DBMS_HOST"
+        DBMS_PORT: "$DBMS_PORT"
+        DBMS_TYPE: "$DBMS_TYPE"
+        IRODS_CONTROL_PLANE_KEY: "$IRODS_CONTROL_PLANE_KEY"
+        IRODS_CONTROL_PLANE_PORT: "$IRODS_CONTROL_PLANE_PORT"
+        IRODS_DEFAULT_RESOURCE: "$IRODS_DEFAULT_RESOURCE"
+        IRODS_FIRST_EPHEMERAL_PORT: "$IRODS_FIRST_EPHEMERAL_PORT"
+        IRODS_LAST_EPHEMERAL_PORT: "$IRODS_LAST_EPHEMERAL_PORT"
+        IRODS_HOST: "$IRODS_CONF_HOST"
+        IRODS_NEGOTIATION_KEY: "$IRODS_NEGOTIATION_KEY"
+        IRODS_SCHEMA_VALIDATION: "$IRODS_SCHEMA_VALIDATION"
+        IRODS_SYSTEM_GROUP: "$IRODS_SYSTEM_GROUP"
+        IRODS_SYSTEM_USER: "$IRODS_SYSTEM_USER"
+        IRODS_ZONE_NAME: "$IRODS_ZONE_NAME"
+        IRODS_ZONE_KEY: "$IRODS_ZONE_KEY"
+        IRODS_ZONE_PORT: "$IRODS_ZONE_PORT"
+        IRODS_ADMIN_USER: "$IRODS_ADMIN_USER"
+        IRODS_ADMIN_PASSWORD: "$IRODS_ADMIN_PASSWORD"
+        IRODS_MAX_NUM_RE_PROCS: "$IRODS_MAX_NUM_RE_PROCS"
+        IRODS_BISQUE_ADMIN_USER: "$IRODS_BISQUE_ADMIN_USER"
+        RABBITMQ_URL: "$RABBITMQ_URL"
+        RABBITMQ_IRODS_EXCHANGE: "$RABBITMQ_IRODS_EXCHANGE"
+        BISQUE_URL: "$BISQUE_URL"
+        BISQUE_IRODS_BASE_URL: "$BISQUE_IRODS_BASE_URL"
+        BISQUE_IRODS_ROOT_PATH: "$BISQUE_IRODS_ROOT_PATH"
+        BISQUE_ADMIN_USER: "$BISQUE_ADMIN_USER"
+        BISQUE_ADMIN_PASSWORD: "$BISQUE_ADMIN_PASSWORD"
+    hostname: "$IRODS_CONF_HOST"
+    ports:
+      - "1247:1247"
+      - "$IRODS_FIRST_EPHEMERAL_PORT-$IRODS_LAST_EPHEMERAL_PORT:$IRODS_FIRST_EPHEMERAL_PORT-$IRODS_LAST_EPHEMERAL_PORT"
+    volumes:
+      - "irods_volume:$IRODS_VAULT"
+    depends_on:
+      - dbms
+      - rabbitmq
+  
+  sftpgo:
+    build:
+      context: .
+      dockerfile: sftpgo/Dockerfile
+      args:
+        WEBDAV_PORT: "$WEBDAV_PORT"
+        SFTP_PORT: "$SFTP_PORT"
+        SFTPGO_ADMIN_UI_PORT: "$SFTPGO_ADMIN_UI_PORT"
+        SFTPGO_VAULT: "$SFTPGO_VAULT"
+        SFTPGO_HOME_PATH: "$SFTPGO_HOME_PATH"
+    environment:
+      - "SFTPGO_DEFAULT_ADMIN_USERNAME=$SFTPGO_ADMIN_USER"
+      - "SFTPGO_DEFAULT_ADMIN_PASSWORD=$SFTPGO_ADMIN_PASSWORD"
+      - "SFTPGO_LOG_DIR=$SFTPGO_LOG_DIR"
+      - "SFTPGO_LOG_FILE_PATH=$SFTPGO_LOG_DIR/sftpgo.log"
+      - "SFTPGO_HOME_PATH=$SFTPGO_HOME_PATH"
+      - "IRODS_PROXY_USER=$IRODS_PROXY_USER"
+      - "IRODS_PROXY_PASSWORD=$IRODS_PROXY_PASSWORD"
+      - "IRODS_HOST=$IRODS_CONF_HOST"
+      - "IRODS_PORT=$IRODS_PORT"
+      - "IRODS_ZONE=$IRODS_ZONE"
+      - "IRODS_SHARED=$IRODS_SHARED"
+    hostname: "$SFTPGO_CONF_HOST"
+    ports:
+      - "$WEBDAV_PORT:$WEBDAV_PORT"
+      - "$SFTP_PORT:$SFTP_PORT"
+      - "$SFTPGO_ADMIN_UI_PORT:$SFTPGO_ADMIN_UI_PORT"
+    volumes:
+      - type: volume
+        source: sftpgo_volume
+        target: "$SFTPGO_VAULT"
+      - type: bind
+        source: "$SFTPGO_LOG_DIR"
+        target: "$SFTPGO_LOG_DIR"
+    depends_on:
+      - irods
+  
+volumes:
+  db_volume:
+    external: true
+  db_backup_volume:
+    external: true
+  irods_volume:
+    external: true
+  sftpgo_volume:
+    external: true
+  
