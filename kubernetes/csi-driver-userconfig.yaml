@@ -15,6 +15,5 @@ nodeService:
     extraArgs:
       - '--cache_timeout_settings=[{"path":"/","timeout":"-1ns","inherit":false},{"path":"/ucsb","timeout":"-1ns","inherit":false},{"path":"/ucsb/home","timeout":"1h","inherit":false},{"path":"/ucsb/home/public","timeout":"1h","inherit":true}]'
       - --cache_size_max=10737418240
-      - --cache_root=/irodsfs_pool_cache
-      - --temp_root=/tmp/irodsfs_pool_temp
+      - --data_root=/irodsfs-pool
       
